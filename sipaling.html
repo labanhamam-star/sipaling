@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIPALING — Kereta Malam ke Dimyat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Literata:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#070B16;
+    --sky-mid:#13213F;
+    --sky-low:#2B2440;
+    --horizon:#7A4332;
+    --amber:#F2A65A;
+    --amber-soft:#F7C98A;
+    --moon:#EAF1FB;
+    --silhouette:#050810;
+    --glass-bg:rgba(255,255,255,0.06);
+    --glass-border:rgba(234,241,251,0.16);
+    --ink:#EAF1FB;
+    --ink-dim:#AFBBD6;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Literata', Georgia, serif;
+    color:var(--ink);
+    background:var(--sky-top);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  .display{font-family:'Fraunces', serif;}
+  .hand{font-family:'Caveat', cursive;}
+
+  /* ============ SKY + SKYLINE (fixed background) ============ */
+  .sky{
+    position:fixed;inset:0;z-index:0;
+    background:linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-low) 72%, var(--horizon) 100%);
+    overflow:hidden;
+  }
+  .moon{
+    position:absolute;top:8%;right:12%;width:54px;height:54px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #fff 0%, var(--moon) 55%, rgba(234,241,251,0) 80%);
+    box-shadow:0 0 40px 14px rgba(234,241,251,0.25);
+  }
+  .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 4s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:0.25;}50%{opacity:0.95;}}
+  .skyline-wrap{position:absolute;bottom:0;left:0;width:100%;height:34vh;min-height:200px;}
+  .skyline-svg{width:100%;height:100%;display:block;}
+  .silhouette{fill:var(--silhouette);}
+  .winlit{fill:var(--amber);opacity:0.85;animation:flicker 5s ease-in-out infinite;}
+  .windark{fill:#1c1f2c;opacity:0.5;}
+  @keyframes flicker{0%,100%{opacity:0.55;}50%{opacity:0.95;}}
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{animation:none !important;transition:none !important;}
+  }
+
+  /* ============ STAGE / GLASS CARD ============ */
+  .stage{
+    position:relative;z-index:2;
+    min-height:100vh;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:flex-start;
+    padding:18px 16px 110px;
+  }
+  .station-label{
+    font-family:'Fraunces',serif;
+    font-size:0.82rem;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--amber-soft);text-align:center;margin:10px 0 14px;
+    opacity:0.9;
+  }
+  .stage-card{
+    width:100%;max-width:440px;
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    padding:24px 22px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.35);
+    animation:fadeIn 0.5s ease;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px) scale(0.99);}to{opacity:1;transform:none;}}
+
+  .stage-card h2{font-family:'Fraunces',serif;font-size:1.4rem;margin:0 0 10px;color:var(--ink);font-weight:600;}
+  .stage-card p.copy{color:var(--ink-dim);font-size:0.95rem;line-height:1.6;margin-bottom:14px;}
+  .skip-hint{font-size:0.78rem;color:var(--ink-dim);opacity:0.7;margin-top:8px;text-align:center;}
+
+  textarea, select, input[type=text]{
+    width:100%;font-family:'Literata',serif;font-size:1rem;
+    padding:12px 14px;border-radius:12px;
+    background:rgba(255,255,255,0.07);
+    border:1px solid var(--glass-border);
+    color:var(--ink);resize:vertical;
+  }
+  textarea{min-height:90px;}
+  textarea::placeholder, input::placeholder{color:rgba(234,241,251,0.45);}
+  select option{color:#111;}
+  textarea:focus-visible, select:focus-visible, input:focus-visible{outline:2px solid var(--amber);outline-offset:1px;}
+
+  /* ============ NAV / RAIL ============ */
+  .nav-row{display:flex;gap:10px;margin-top:18px;}
+  .btn{
+    flex:1;padding:13px 16px;border-radius:24px;border:none;cursor:pointer;
+    font-family:'Fraunces',serif;font-size:0.95rem;font-weight:600;
+  }
+  .btn.primary{background:var(--amber);color:#241606;}
+  .btn.ghost{background:transparent;border:1px solid var(--glass-border);color:var(--ink);}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn:focus-visible{outline:2px solid var(--moon);outline-offset:2px;}
+
+  .rail{
+    position:fixed;left:0;bottom:0;width:100%;z-index:5;
+    background:linear-gradient(to top, rgba(7,11,22,0.92), rgba(7,11,22,0));
+    padding:14px 18px 16px;
+  }
+  .rail-track{position:relative;height:3px;background:rgba(234,241,251,0.18);border-radius:2px;margin-bottom:6px;}
+  .rail-fill{position:absolute;left:0;top:0;height:3px;background:var(--amber);border-radius:2px;transition:width 0.4s ease;}
+  .rail-train{position:absolute;top:-9px;transform:translateX(-50%);font-size:1rem;transition:left 0.4s ease;}
+  .rail-text{text-align:center;font-size:0.74rem;color:var(--ink-dim);}
+
+  /* corner toggle */
+  .corner-btn{
+    position:fixed;top:14px;right:14px;z-index:10;
+    background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);
+    color:var(--ink);padding:8px 12px;border-radius:20px;font-size:0.82rem;cursor:pointer;
+    backdrop-filter:blur(6px);
+  }
+  .corner-btn:focus-visible{outline:2px solid var(--amber);}
+
+  /* ============ TICKET ============ */
+  .ticket{
+    background:rgba(255,255,255,0.05);border:1px dashed var(--glass-border);
+    border-radius:14px;padding:16px;margin-bottom:6px;
+  }
+  .ticket-row{display:flex;justify-content:space-between;font-size:0.92rem;margin:5px 0;}
+  .ticket-row span:first-child{color:var(--ink-dim);}
+  .rsvp-count{text-align:center;font-size:0.82rem;color:var(--amber-soft);margin-top:10px;}
+
+  /* ============ MOOD ============ */
+  .mood-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .mood-chip{
+    border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);
+    padding:9px 13px;border-radius:18px;cursor:pointer;font-size:0.9rem;
+  }
+  .mood-chip.selected{background:var(--amber);color:#241606;border-color:var(--amber);}
+
+  /* ============ NOMINATIONS ============ */
+  .nom-block{margin-bottom:16px;}
+  .nom-block h3{font-family:'Fraunces',serif;font-size:1rem;margin:0 0 2px;color:var(--amber-soft);}
+  .nom-block .desc{font-size:0.83rem;color:var(--ink-dim);font-style:italic;margin-bottom:6px;}
+
+  /* ============ MATCH-LIGHT LETTER REVEAL ============ */
+  .reveal-box{position:relative;border-radius:14px;overflow:hidden;background:rgba(0,0,0,0.35);padding:18px;min-height:120px;}
+  .reveal-mask{
+    position:absolute;inset:0;background:#050810;
+    clip-path:circle(0% at 50% 18%);
+    transition:clip-path 1.1s cubic-bezier(.2,.7,.2,1);
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:20px;cursor:pointer;
+  }
+  .reveal-mask.lit{clip-path:circle(150% at 50% 18%);}
+  .reveal-mask .match-btn{font-family:'Fraunces',serif;color:var(--amber-soft);font-size:0.95rem;}
+  .reveal-content{position:relative;z-index:1;}
+  .to-name{font-family:'Caveat',cursive;font-size:1.7rem;color:var(--amber-soft);margin-bottom:8px;}
+  .required-tag{font-size:0.7rem;background:var(--horizon);color:#fff;padding:2px 8px;border-radius:8px;margin-left:6px;}
+
+  /* ============ CONFIRM ============ */
+  .confirm-stamp{
+    width:110px;height:110px;border:3px solid var(--amber);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
+    transform:rotate(-8deg);color:var(--amber-soft);font-family:'Fraunces',serif;text-align:center;font-size:0.9rem;
+  }
+
+  .status-msg{font-size:0.85rem;margin-top:10px;padding:8px 10px;border-radius:8px;}
+  .status-msg.error{background:rgba(122,67,50,0.5);color:#FBE3D6;}
+  .status-msg.ok{background:rgba(122,67,50,0.2);color:var(--amber-soft);}
+
+  /* ============ WALL ============ */
+  .wall-section{margin-bottom:26px;}
+  .wall-section h2{font-family:'Fraunces',serif;color:var(--amber-soft);font-size:1.15rem;margin-bottom:4px;}
+  .wall-section .hint{font-size:0.84rem;color:var(--ink-dim);margin-bottom:12px;}
+
+  .lantern-row{display:flex;justify-content:center;align-items:flex-end;gap:18px;margin:14px 0 4px;}
+  .lantern{text-align:center;}
+  .lantern .bulb{
+    margin:0 auto;border-radius:50% 50% 45% 45%;
+    background:radial-gradient(circle at 40% 30%, var(--amber-soft), var(--amber) 70%);
+    box-shadow:0 0 18px 6px rgba(242,166,90,0.45);
+    animation:sway 4s ease-in-out infinite;
+  }
+  .lantern.r1 .bulb{width:54px;height:64px;}
+  .lantern.r2 .bulb{width:42px;height:50px;}
+  .lantern.r3 .bulb{width:34px;height:40px;}
+  .lantern .name{font-size:0.82rem;margin-top:8px;color:var(--ink);}
+  .lantern .count{font-size:0.72rem;color:var(--ink-dim);}
+  @keyframes sway{0%,100%{transform:rotate(-3deg);}50%{transform:rotate(3deg);}}
+  .empty-note{font-size:0.86rem;color:var(--ink-dim);font-style:italic;}
+
+  .postcard{background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:14px;padding:20px;min-height:100px;}
+  .postcard p{font-family:'Caveat',cursive;font-size:1.35rem;margin:0;color:var(--ink);}
+  .carousel-nav{display:flex;justify-content:space-between;margin-top:10px;}
+  .carousel-nav button{background:transparent;border:1px solid var(--glass-border);color:var(--ink);border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'Fraunces',serif;font-size:0.85rem;}
+  .carousel-dots{text-align:center;font-size:0.76rem;color:var(--ink-dim);margin-top:6px;}
+
+  .polaroid{background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:10px;padding:14px;margin-bottom:10px;}
+  .polaroid p{font-family:'Caveat',cursive;font-size:1.2rem;margin:0;color:var(--ink);}
+  .polaroid .tag{font-size:0.7rem;color:var(--amber-soft);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px;}
+
+  .mood-stars{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+  .mood-star-item{text-align:center;font-size:0.82rem;color:var(--ink-dim);}
+  .mood-star-dot{margin:0 auto 4px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #fff, var(--amber) 70%);box-shadow:0 0 10px 3px rgba(242,166,90,0.4);}
+
+  .closing-letter{background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:14px;padding:22px;}
+  .closing-letter p{font-family:'Caveat',cursive;font-size:1.25rem;line-height:1.55;color:var(--ink);}
+  .closing-letter .sign{text-align:right;font-family:'Caveat',cursive;font-size:1.4rem;color:var(--amber-soft);margin-top:6px;}
+
+  .locked-card{text-align:center;padding:50px 18px;}
+  .locked-card .lock-emoji{font-size:2.4rem;margin-bottom:10px;}
+  .countdown{display:flex;justify-content:center;gap:16px;margin:18px 0 8px;font-family:'Fraunces',serif;}
+  .countdown div{text-align:center;}
+  .countdown .num{font-size:1.7rem;color:var(--amber-soft);}
+  .countdown .lbl{font-size:0.7rem;color:var(--ink-dim);}
+
+  footer.note{text-align:center;font-size:0.78rem;color:var(--ink-dim);margin-top:10px;}
+
+  /* ============ GATE (Siap Mulai dodge button) ============ */
+  .gate-overlay{
+    position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    padding:16px;background:rgba(7,11,22,0.6);transition:opacity 0.35s ease;
+  }
+  .gate-overlay.hide{opacity:0;pointer-events:none;}
+  .gate-arena{position:relative;height:190px;margin:16px 0 6px;}
+  .gate-btn{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    padding:14px 22px;border-radius:24px;background:var(--amber);color:#241606;
+    border:none;font-family:'Fraunces',serif;font-weight:600;font-size:1rem;cursor:pointer;
+  }
+  .gate-taunt{color:var(--amber-soft);min-height:1.5em;margin-top:4px;}
+
+  /* ============ TANGKI CINTA ============ */
+  .tank-wrap{display:flex;flex-direction:column;align-items:center;margin:18px 0 14px;}
+  .tank{width:92px;height:170px;border:3px solid var(--glass-border);border-radius:16px 16px 24px 24px;position:relative;overflow:hidden;background:rgba(255,255,255,0.04);}
+  .tank-fill{position:absolute;bottom:0;left:0;width:100%;height:0%;background:linear-gradient(to top, var(--horizon), var(--amber), #ff8aa6);transition:height 0.18s ease;}
+  .tank-pct{margin-top:8px;font-size:0.85rem;color:var(--ink-dim);}
+  .tap-heart-btn.pulse{animation:tapPulse 0.18s ease;}
+  @keyframes tapPulse{0%{transform:scale(1);}50%{transform:scale(0.93);}100%{transform:scale(1);}}
+  .heart-particle{position:fixed;pointer-events:none;font-size:1.3rem;animation:floatUp 0.9s ease forwards;z-index:55;}
+  @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-60px) scale(1.3);}}
+  .confetti-overlay{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden;}
+  .confetti-heart{position:absolute;top:-10%;animation:confettiFall linear forwards;}
+  @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(120vh) rotate(360deg);opacity:0.7;}}
+</style>
+</head>
+<body>
+
+<div class="sky" id="skyBg" aria-hidden="true">
+  <div class="moon"></div>
+  <div id="starsLayer"></div>
+  <div class="skyline-wrap">
+    <svg class="skyline-svg" viewBox="0 0 1000 320" preserveAspectRatio="xMidYMax slice">
+      <!-- pyramids + sphinx -->
+      <polygon class="silhouette" points="10,300 40,235 70,300"></polygon>
+      <polygon class="silhouette" points="30,300 90,175 150,300"></polygon>
+      <polygon class="silhouette" points="105,300 160,200 215,300"></polygon>
+      <rect class="silhouette" x="195" y="282" width="68" height="18" rx="4"></rect>
+      <rect class="silhouette" x="232" y="258" width="26" height="26" rx="3"></rect>
+      <polygon class="silhouette" points="232,258 245,242 258,258"></polygon>
+
+      <!-- low buildings band 1 -->
+      <g>
+        <rect class="silhouette" x="280" y="250" width="34" height="50"></rect>
+        <rect class="windark" x="286" y="258" width="6" height="8"></rect>
+        <rect class="winlit" x="298" y="258" width="6" height="8" style="animation-delay:0.4s"></rect>
+        <rect class="windark" x="286" y="272" width="6" height="8"></rect>
+        <rect class="winlit" x="298" y="272" width="6" height="8" style="animation-delay:1.1s"></rect>
+
+        <rect class="silhouette" x="320" y="225" width="30" height="75"></rect>
+        <rect class="winlit" x="326" y="235" width="6" height="8" style="animation-delay:0.8s"></rect>
+        <rect class="windark" x="338" y="235" width="6" height="8"></rect>
+        <rect class="windark" x="326" y="250" width="6" height="8"></rect>
+        <rect class="winlit" x="338" y="250" width="6" height="8" style="animation-delay:1.6s"></rect>
+        <rect class="winlit" x="326" y="265" width="6" height="8" style="animation-delay:0.2s"></rect>
+        <rect class="windark" x="338" y="265" width="6" height="8"></rect>
+
+        <rect class="silhouette" x="356" y="245" width="34" height="55"></rect>
+        <rect class="windark" x="362" y="255" width="6" height="8"></rect>
+        <rect class="winlit" x="374" y="255" width="6" height="8" style="animation-delay:1.3s"></rect>
+        <rect class="winlit" x="362" y="270" width="6" height="8" style="animation-delay:2s"></rect>
+        <rect class="windark" x="374" y="270" width="6" height="8"></rect>
+
+        <rect class="silhouette" x="396" y="260" width="28" height="40"></rect>
+        <rect class="winlit" x="402" y="268" width="6" height="8" style="animation-delay:0.6s"></rect>
+        <rect class="windark" x="412" y="268" width="6" height="8"></rect>
+      </g>
+
+      <!-- Cairo Tower -->
+      <path class="silhouette" d="M462,300 L466,150 L474,150 L478,300 Z"></path>
+      <ellipse class="silhouette" cx="470" cy="140" rx="26" ry="13"></ellipse>
+      <rect class="silhouette" x="467" y="65" width="6" height="78"></rect>
+      <circle class="silhouette" cx="470" cy="58" r="6"></circle>
+
+      <!-- low buildings band 2 -->
+      <g>
+        <rect class="silhouette" x="508" y="255" width="30" height="45"></rect>
+        <rect class="winlit" x="514" y="263" width="6" height="8" style="animation-delay:0.9s"></rect>
+        <rect class="windark" x="526" y="263" width="6" height="8"></rect>
+        <rect class="windark" x="514" y="278" width="6" height="8"></rect>
+        <rect class="winlit" x="526" y="278" width="6" height="8" style="animation-delay:1.8s"></rect>
+
+        <rect class="silhouette" x="544" y="230" width="32" height="70"></rect>
+        <rect class="winlit" x="550" y="240" width="6" height="8" style="animation-delay:0.3s"></rect>
+        <rect class="windark" x="562" y="240" width="6" height="8"></rect>
+        <rect class="windark" x="550" y="255" width="6" height="8"></rect>
+        <rect class="winlit" x="562" y="255" width="6" height="8" style="animation-delay:1.4s"></rect>
+        <rect class="winlit" x="550" y="270" width="6" height="8" style="animation-delay:2.2s"></rect>
+        <rect class="windark" x="562" y="270" width="6" height="8"></rect>
+
+        <rect class="silhouette" x="582" y="248" width="28" height="52"></rect>
+        <rect class="windark" x="588" y="258" width="6" height="8"></rect>
+        <rect class="winlit" x="598" y="258" width="6" height="8" style="animation-delay:0.5s"></rect>
+        <rect class="winlit" x="588" y="272" width="6" height="8" style="animation-delay:1.1s"></rect>
+        <rect class="windark" x="598" y="272" width="6" height="8"></rect>
+
+        <rect class="silhouette" x="616" y="262" width="26" height="38"></rect>
+        <rect class="winlit" x="622" y="270" width="6" height="8" style="animation-delay:0.7s"></rect>
+        <rect class="windark" x="632" y="270" width="6" height="8"></rect>
+      </g>
+
+      <!-- Al-Azhar: minaret left, dome, minaret right -->
+      <g>
+        <rect class="silhouette" x="672" y="150" width="12" height="150"></rect>
+        <rect class="silhouette" x="666" y="198" width="24" height="10"></rect>
+        <circle class="silhouette" cx="678" cy="140" r="9"></circle>
+        <rect class="silhouette" x="675" y="110" width="6" height="32"></rect>
+        <circle class="silhouette" cx="678" cy="106" r="4"></circle>
+
+        <rect class="silhouette" x="710" y="220" width="60" height="80"></rect>
+        <path class="silhouette" d="M710,222 Q740,160 770,222 Z"></path>
+        <circle class="silhouette" cx="740" cy="158" r="5"></circle>
+
+        <rect class="silhouette" x="800" y="150" width="12" height="150"></rect>
+        <rect class="silhouette" x="794" y="198" width="24" height="10"></rect>
+        <circle class="silhouette" cx="806" cy="140" r="9"></circle>
+        <rect class="silhouette" x="803" y="110" width="6" height="32"></rect>
+        <circle class="silhouette" cx="806" cy="106" r="4"></circle>
+      </g>
+
+      <!-- tapering buildings band 3 -->
+      <g>
+        <rect class="silhouette" x="838" y="262" width="26" height="38"></rect>
+        <rect class="winlit" x="844" y="270" width="6" height="8" style="animation-delay:1.5s"></rect>
+        <rect class="windark" x="854" y="270" width="6" height="8"></rect>
+
+        <rect class="silhouette" x="868" y="272" width="22" height="28"></rect>
+        <rect class="windark" x="873" y="278" width="6" height="8"></rect>
+        <rect class="winlit" x="883" y="278" width="6" height="8" style="animation-delay:0.2s"></rect>
+      </g>
+
+      <!-- Nile bridge -->
+      <g>
+        <rect class="silhouette" x="918" y="278" width="82" height="6"></rect>
+        <rect class="silhouette" x="930" y="195" width="10" height="90"></rect>
+        <rect class="silhouette" x="980" y="195" width="10" height="90"></rect>
+        <line class="silhouette" x1="935" y1="195" x2="918" y2="280" stroke="#050810" stroke-width="2"></line>
+        <line class="silhouette" x1="935" y1="195" x2="955" y2="280" stroke="#050810" stroke-width="2"></line>
+        <line class="silhouette" x1="985" y1="195" x2="965" y2="280" stroke="#050810" stroke-width="2"></line>
+        <line class="silhouette" x1="985" y1="195" x2="1000" y2="280" stroke="#050810" stroke-width="2"></line>
+        <ellipse class="silhouette" cx="930" cy="288" rx="9" ry="6"></ellipse>
+        <ellipse class="silhouette" cx="990" cy="288" rx="9" ry="6"></ellipse>
+      </g>
+
+      <!-- ground line -->
+      <rect class="silhouette" x="0" y="298" width="1000" height="22"></rect>
+    </svg>
+  </div>
+</div>
+
+<button class="corner-btn" id="cornerToggle" style="display:none;">🌙 Dinding Kenangan</button>
+<button class="corner-btn" id="muteToggle" style="display:none;left:14px;right:auto;">🔊</button>
+
+<!-- Ganti src di bawah ini kalau sudah punya file/link musik instrumental -->
+<audio id="bgMusic" loop preload="none"></audio>
+
+<div class="gate-overlay" id="gateOverlay">
+  <div class="stage-card" style="text-align:center;">
+    <h2 class="display">Udah Siap Mulai?</h2>
+    <p class="copy">Sebelum kereta jalan, jawab dulu pertanyaan paling penting ini.</p>
+    <div class="gate-arena" id="gateArena">
+      <button class="gate-btn" id="gateBtn">Aku Siap! 🚂</button>
+    </div>
+    <p class="hand gate-taunt" id="gateTaunt">Tangkap dulu kalau berani 😏</p>
+  </div>
+</div>
+
+<!-- ============ STEP FLOW (Undangan) ============ -->
+<main class="stage" id="flowStage" style="display:none;">
+  <div class="station-label" id="stationLabel"></div>
+  <div class="stage-card" id="stepCard"></div>
+</main>
+
+<!-- ============ WALL (Dinding Kenangan) ============ -->
+<main class="stage" id="wallStage" style="display:none;">
+  <div id="wallLocked" style="display:none;">
+    <div class="stage-card locked-card">
+      <div class="lock-emoji">🔒</div>
+      <h2 class="display">Dinding Kenangan masih gelap</h2>
+      <p class="copy">Semua surat, nominasi, dan kenangan kalian sedang menunggu malam rihlah. Terbuka otomatis saat kereta sampai di Dimyat:</p>
+      <div class="countdown" id="countdownBox">
+        <div><div class="num" id="cdDays">-</div><div class="lbl">HARI</div></div>
+        <div><div class="num" id="cdHours">-</div><div class="lbl">JAM</div></div>
+        <div><div class="num" id="cdMin">-</div><div class="lbl">MENIT</div></div>
+        <div><div class="num" id="cdSec">-</div><div class="lbl">DETIK</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="wallContent" style="display:none;width:100%;max-width:440px;">
+    <h1 class="display" style="text-align:center;color:var(--amber-soft);">Dinding Kenangan</h1>
+    <p class="copy" style="text-align:center;" id="wallSummary"></p>
+
+    <div class="wall-section">
+      <h2>Lentera Nominasi</h2>
+      <div class="hint">Tiga lentera paling terang tiap kategori, berdasarkan suara kalian</div>
+      <div id="nomResults"></div>
+    </div>
+
+    <div class="wall-section">
+      <h2>Pesan untuk Semua</h2>
+      <div class="hint">Geser buat baca kartu pos dari teman-teman lainnya</div>
+      <div class="postcard"><p id="postcardText">Belum ada pesan masuk.</p></div>
+      <div class="carousel-nav">
+        <button id="pcPrev">‹ Sebelumnya</button>
+        <button id="pcNext">Selanjutnya ›</button>
+      </div>
+      <div class="carousel-dots" id="pcDots"></div>
+    </div>
+
+    <div class="wall-section">
+      <h2>Cari Pesan Buat Kamu</h2>
+      <div class="hint">Semua orang dijamin kebagian minimal 2 surat — coba cek namamu</div>
+      <select id="searchName"></select>
+      <div id="searchResults" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="wall-section">
+      <h2>Mood Angkatan Malam Ini</h2>
+      <div class="mood-stars" id="moodStars"></div>
+    </div>
+
+    <div class="wall-section">
+      <h2>Surat Penutup</h2>
+      <div class="closing-letter">
+        <p>Empat tahun lalu kita datang ke negeri ini sendiri-sendiri, bawa koper berat dan rasa asing yang sama. Tapi entah gimana caranya, asrama tahun pertama itu yang bikin kita jadi satu keluarga — yang ribut soal hal receh, yang nangis bareng pas kangen rumah, yang akhirnya saling jaga sampai sekarang.</p>
+        <p>Malam ini, semoga Dimyat jadi saksi baru: bahwa Sipaling bukan cuma nama angkatan, tapi rumah yang kita bangun bareng-bareng. Makasih udah bertahan, makasih udah jadi keluarga.</p>
+        <div class="sign">— Panitia Rihlah Sipaling 🚂</div>
+      </div>
+    </div>
+    <footer class="note">Empat tahun, satu kereta, sejuta cerita.</footer>
+  </div>
+</main>
+
+<div class="rail" id="railBox" style="display:none;">
+  <div class="rail-track"><div class="rail-fill" id="railFill"></div><div class="rail-train" id="railTrain">🚂</div></div>
+  <div class="rail-text" id="railText"></div>
+</div>
+
+<script>
+(function(){
+
+  /* ===================== DATA DASAR ===================== */
+  const NAMES = ["Laban","Ishaq","Azam","Deva","Oji","Arsyi","Rizki","Arkan","Mamet","Zaki",
+    "Iqyan","Dhiya","Ojan","Amir","Salsa","Yuanca","Pinaa","Aya","Sellyb","Fania",
+    "Caen","Khanifah","Rasyid","Refli"];
+
+  // Ubah baris ini kalau tanggal/jam acara berubah
+  const UNLOCK_TIME = new Date('2026-07-01T19:00:00+02:00').getTime();
+
+  /* ===================== SEEDED SHUFFLE & SURAT WAJIB ===================== */
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function seededShuffle(arr, seed){
+    const a = arr.slice();
+    const rand = mulberry32(seed);
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const SHUFFLED = seededShuffle(NAMES, 20260701);
+  function getTargets(name){
+    const i = SHUFFLED.indexOf(name);
+    if (i === -1) return [null, null];
+    const n = SHUFFLED.length;
+    return [SHUFFLED[(i + 5) % n], SHUFFLED[(i + 17) % n]];
+  }
+
+  /* ===================== STARFIELD ===================== */
+  const starsLayer = document.getElementById('starsLayer');
+  const starRand = mulberry32(7);
+  for (let i = 0; i < 50; i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = 1.5 + starRand() * 2;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.left = (starRand() * 100) + '%';
+    s.style.top = (starRand() * 58) + '%';
+    s.style.animationDelay = (starRand() * 4) + 's';
+    starsLayer.appendChild(s);
+  }
+
+  /* ===================== HELPERS ===================== */
+  const $ = (id) => document.getElementById(id);
+  function fillSelect(sel, placeholder){
+    sel.innerHTML = '';
+    const opt0 = document.createElement('option');
+    opt0.value = ''; opt0.textContent = placeholder || 'Pilih nama...';
+    sel.appendChild(opt0);
+    NAMES.forEach((n) => {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      sel.appendChild(o);
+    });
+  }
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  /* ===================== STATE ===================== */
+  const state = {
+    whoami: '', mood: '',
+    funny:'', touching:'', repeatDay:'', neverSaid:'', mvp:'', oneWord:'',
+    gokil:'', kangen:'', berkorban:'', baikHati:'', susahDilupain:'',
+    letter1:'', letter2:'',
+    freeOneTo:'', freeOneText:'', freeAllText:''
+  };
+
+  /* ===================== STEP DEFINITIONS ===================== */
+  const steps = [
+    {
+      station: 'Sebelum Berangkat',
+      render(){
+        return `
+          <h2 class="display">Sipaling</h2>
+          <p class="copy">Inget gak waktu pertama nginjak Mesir? Koper segede gaban, bahasa Arab masih modal nekat, dan kita semua sama-sama bingung nyari kamar asrama. Empat tahun kemudian, kita masih bertahan dan masih sering ketawa bareng.</p>
+          <p class="copy">Malam ini keretanya berangkat. Setiap stasiun yang kita lewati adalah satu kenangan. Pelan-pelan aja, gak usah buru-buru.</p>
+        `;
+      }
+    },
+    {
+      station: 'Stasiun Keberangkatan',
+      render(){
+        return `
+          <h2 class="display">Tiket Kamu</h2>
+          <div class="ticket">
+            <div class="ticket-row"><span>Tujuan</span><span>Dimyat (Damietta)</span></div>
+            <div class="ticket-row"><span>Tanggal</span><span>1–2 Juli 2026</span></div>
+            <div class="ticket-row"><span>Durasi</span><span>2 hari 1 malam</span></div>
+            <div class="ticket-row"><span>Moda</span><span>Kereta 🚂</span></div>
+            <div class="ticket-row"><span>Kontribusi</span><span>500 LE, via Rasyid</span></div>
+          </div>
+          <p class="copy" style="margin-top:14px;">Ini bukan rihlah biasa — ini perayaan 4 tahun perjalanan kita di Mesir.</p>
+          <button class="btn ghost" id="rsvpBtn" style="width:100%;">🎟️ Aku Ikut Rihlah Ini!</button>
+          <div class="rsvp-count" id="rsvpCount"></div>
+        `;
+      },
+      after(){
+        const btn = $('rsvpBtn');
+        let clicked = false;
+        async function refresh(){
+          try{
+            const r = await window.storage.get('rsvp-count', true);
+            const n = r ? parseInt(r.value, 10) : 0;
+            $('rsvpCount').textContent = (isNaN(n) ? 0 : n) + ' orang udah klik ikut';
+          }catch(e){ $('rsvpCount').textContent = ''; }
+        }
+        btn.addEventListener('click', async () => {
+          if (clicked) return;
+          clicked = true; btn.disabled = true; btn.textContent = '✅ Tercatat, sampai jumpa di kereta!';
+          try{
+            const r = await window.storage.get('rsvp-count', true);
+            let n = r ? parseInt(r.value, 10) : 0;
+            if (isNaN(n)) n = 0;
+            await window.storage.set('rsvp-count', String(n + 1), true);
+          }catch(e){}
+          refresh();
+        });
+        refresh();
+      }
+    },
+    questionStep('funny', 'Stasiun Tawa', 'Momen paling lucu yang kamu ingat bersama Sipaling?', 'Cerita aja, sekonyol apapun...'),
+    questionStep('touching', 'Stasiun Haru', 'Momen paling mengharukan yang kamu ingat?', 'Boleh yang bikin nangis juga...'),
+    questionStep('repeatDay', 'Stasiun Mengulang Waktu', 'Kalau bisa mengulang satu hari bersama Sipaling, hari apa yang ingin kamu ulang?', 'Hari apa, dan kenapa?'),
+    questionStep('neverSaid', 'Stasiun yang Belum Terucap', 'Hal yang belum pernah kamu sampaikan selama ini?', 'Sekarang waktunya, anonim kok...'),
+    questionStep('mvp', 'Stasiun MVP', 'Menurutmu, siapa MVP Sipaling?', 'Sebut nama + alasannya kalau mau'),
+    questionStep('oneWord', 'Stasiun Satu Kata', 'Satu kata yang menggambarkan angkatan ini?', 'Satu kata aja', true),
+    {
+      station: 'Stasiun Perasaan',
+      render(){
+        const moods = ['🥹 Terharu','😂 Ngakak inget masa lalu','🥲 Campur aduk','🤗 Bersyukur','😎 Bangga jadi bagian Sipaling','😭 Kangen banget'];
+        return `
+          <h2 class="display">Perasaanmu Sekarang</h2>
+          <p class="copy">Sambil duduk di jendela ini, gimana rasanya mikirin Sipaling?</p>
+          <div class="mood-grid" id="moodGrid">
+            ${moods.map(m => `<div class="mood-chip${state.mood===m?' selected':''}" data-mood="${m}">${m}</div>`).join('')}
+          </div>
+        `;
+      },
+      after(){
+        const grid = $('moodGrid');
+        grid.querySelectorAll('.mood-chip').forEach((chip) => {
+          chip.addEventListener('click', () => {
+            grid.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+            state.mood = chip.getAttribute('data-mood');
+          });
+        });
+      }
+    },
+    {
+      station: 'Stasiun Nominasi',
+      render(){
+        const cats = [
+          ['gokil','Paling Gokil','yang bikin satu asrama ketawa cuma karena dia masuk ruangan'],
+          ['kangen','Paling Bikin Kangen','yang kalau lama gak ketemu, tiba-tiba kepikiran terus'],
+          ['berkorban','Paling Berkorban','yang diem-diem selalu ada pas yang lain butuh'],
+          ['baikHati','Paling Diem-Diem Baik Hati','kebaikannya gak pernah diumumin, tapi kerasa'],
+          ['susahDilupain','Paling Susah Dilupain','dari cerita asrama tahun pertama sampai sekarang']
+        ];
+        return `
+          <h2 class="display">Nominasi Sipaling</h2>
+          <p class="copy">Pilih nama buat tiap kategori. Boleh skip kalau bingung.</p>
+          ${cats.map(c => `
+            <div class="nom-block">
+              <h3>${c[1]}</h3>
+              <div class="desc">${c[2]}</div>
+              <select id="nom-${c[0]}"></select>
+            </div>
+          `).join('')}
+        `;
+      },
+      after(){
+        ['gokil','kangen','berkorban','baikHati','susahDilupain'].forEach((key) => {
+          const sel = $('nom-' + key);
+          fillSelect(sel, 'Skip / pilih nama...');
+          sel.value = state[key];
+          sel.addEventListener('change', () => { state[key] = sel.value; });
+        });
+      }
+    },
+    {
+      station: 'Stasiun Pengenalan Diri',
+      render(){
+        return `
+          <h2 class="display">Siapa Kamu?</h2>
+          <p class="copy">Biar gak ada yang kelupaan dapet pesan, tiap orang otomatis dapet 2 nama buat ditulisin surat singkat. Pilih dulu siapa kamu — ini cuma buat nentuin surat wajibmu, gak disimpan ke mana-mana.</p>
+          <select id="whoamiSel"></select>
+        `;
+      },
+      after(){
+        const sel = $('whoamiSel');
+        fillSelect(sel, 'Pilih siapa kamu...');
+        sel.value = state.whoami;
+        sel.addEventListener('change', () => { state.whoami = sel.value; });
+      },
+      validate(){
+        if (!state.whoami){
+          return 'Pilih dulu siapa kamu ya, biar surat wajibmu nyampe ke orang yang tepat.';
+        }
+        return null;
+      }
+    },
+    letterStep(0, 'letter1'),
+    letterStep(1, 'letter2'),
+    {
+      station: 'Stasiun Pesan Pribadi',
+      render(){
+        return `
+          <h2 class="display">Pesan Bebas (Opsional)</h2>
+          <p class="copy">Mau kirim pesan bebas ke satu orang tertentu? Boleh dikosongin.</p>
+          <select id="freeOneSel" style="margin-bottom:10px;"></select>
+          <textarea id="freeOneTxt" placeholder="Tulis pesan bebas buat dia...">${escapeHtml(state.freeOneText)}</textarea>
+        `;
+      },
+      after(){
+        const sel = $('freeOneSel');
+        fillSelect(sel, 'Skip / pilih nama...');
+        sel.value = state.freeOneTo;
+        sel.addEventListener('change', () => { state.freeOneTo = sel.value; });
+        $('freeOneTxt').addEventListener('input', (e) => { state.freeOneText = e.target.value; });
+      },
+      skippable:true
+    },
+    {
+      station: 'Stasiun Pesan untuk Semua',
+      render(){
+        return `
+          <h2 class="display">Pesan untuk Semua</h2>
+          <p class="copy">Satu hal yang mau kamu sampaikan ke seluruh angkatan, dibaca semua orang nanti.</p>
+          <textarea id="freeAllTxt" placeholder="Tulis sesuatu yang mau kamu sampaikan...">${escapeHtml(state.freeAllText)}</textarea>
+        `;
+      },
+      after(){
+        $('freeAllTxt').addEventListener('input', (e) => { state.freeAllText = e.target.value; });
+      },
+      skippable:true
+    },
+    {
+      station: 'Sebelum Berangkat',
+      render(){
+        return `
+          <h2 class="display">Hampir Sampai</h2>
+          <p class="copy">Suratmu siap dikirim. Begitu kamu kirim, semua jawaban masuk ke Dinding Kenangan dalam keadaan anonim — gak ada nama pengirim yang tercatat sama sekali.</p>
+          <button class="btn primary" id="submitBtn" style="width:100%;">📮 Kirim Suratku</button>
+          <div id="submitStatus"></div>
+        `;
+      },
+      after(){
+        $('submitBtn').addEventListener('click', submitEntry);
+      },
+      noNext:true
+    },
+    {
+      station: 'Sampai di Dimyat',
+      render(){
+        return `
+          <div class="confirm-stamp">TERKIRIM</div>
+          <h2 class="display" style="text-align:center;">Suratmu Udah Sampai</h2>
+          <p class="copy" style="text-align:center;">Sebelum kereta ini berhenti — isi dulu Tangki Cinta buat Sipaling. Tap secepat yang kamu bisa, kalau kelamaan diem nanti turun lagi!</p>
+
+          <div class="tank-wrap" id="tankWrap">
+            <div class="tank"><div class="tank-fill" id="tankFill"></div></div>
+            <div class="tank-pct" id="tankPct">0% penuh ❤️</div>
+          </div>
+          <button class="btn primary tap-heart-btn" id="tapHeartBtn" style="width:100%;">❤️ TAP TERUS!</button>
+          <p style="text-align:center;margin-top:10px;"><a href="#" id="skipLoveLink" style="color:var(--ink-dim);font-size:0.8rem;">lewati</a></p>
+
+          <div id="celebrateBox" style="display:none;text-align:center;">
+            <h2 class="display" style="margin-top:10px;">Penuh! 🎉</h2>
+            <p class="copy">Makasih udah jadi bagian dari Sipaling. Sampai jumpa di kereta menuju Dimyat — Dinding Kenangan terbuka malam itu.</p>
+            <button class="btn ghost" id="writeAgainBtn" style="width:100%;">Isi lagi / tambah pesan</button>
+          </div>
+          <div class="confetti-overlay" id="confettiOverlay"></div>
+        `;
+      },
+      after(){
+        const tankFill = $('tankFill'), tankPct = $('tankPct');
+        const tankWrap = $('tankWrap'), tapBtn = $('tapHeartBtn'), skipLink = $('skipLoveLink');
+        const celebrateBox = $('celebrateBox'), confettiOverlay = $('confettiOverlay');
+        let fill = 0;
+
+        function updateTank(){
+          tankFill.style.height = fill + '%';
+          tankPct.textContent = Math.round(fill) + '% penuh ❤️';
+        }
+        updateTank();
+
+        const decayInterval = setInterval(() => {
+          fill = Math.max(0, fill - 2);
+          updateTank();
+        }, 200);
+
+        function spawnHeartParticle(){
+          const rect = tapBtn.getBoundingClientRect();
+          const p = document.createElement('div');
+          p.className = 'heart-particle';
+          p.textContent = '❤️';
+          p.style.left = (rect.left + rect.width / 2 + (Math.random() * 40 - 20)) + 'px';
+          p.style.top = rect.top + 'px';
+          document.body.appendChild(p);
+          setTimeout(() => p.remove(), 950);
+        }
+
+        function spawnConfetti(){
+          const emojis = ['❤️','💛','💕','💖','🧡'];
+          for (let i = 0; i < 26; i++){
+            const h = document.createElement('div');
+            h.className = 'confetti-heart';
+            h.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            h.style.left = (Math.random() * 100) + '%';
+            h.style.fontSize = (14 + Math.random() * 18) + 'px';
+            h.style.animationDuration = (2.4 + Math.random() * 2.2) + 's';
+            h.style.animationDelay = (Math.random() * 0.6) + 's';
+            confettiOverlay.appendChild(h);
+          }
+          setTimeout(() => { confettiOverlay.innerHTML = ''; }, 5200);
+        }
+
+        function celebrate(){
+          clearInterval(decayInterval);
+          tankWrap.style.display = 'none';
+          tapBtn.style.display = 'none';
+          skipLink.parentElement.style.display = 'none';
+          celebrateBox.style.display = 'block';
+          spawnConfetti();
+          $('writeAgainBtn').addEventListener('click', () => location.reload());
+        }
+
+        tapBtn.addEventListener('click', () => {
+          if (fill >= 100) return;
+          fill = Math.min(100, fill + 6);
+          updateTank();
+          spawnHeartParticle();
+          tapBtn.classList.remove('pulse');
+          void tapBtn.offsetWidth;
+          tapBtn.classList.add('pulse');
+          if (fill >= 100) celebrate();
+        });
+
+        skipLink.addEventListener('click', (e) => { e.preventDefault(); celebrate(); });
+      },
+      noNext:true, noBack:true
+    }
+  ];
+
+  function questionStep(key, station, label, placeholder, isInput){
+    return {
+      station,
+      render(){
+        const tag = isInput ? 'input' : 'textarea';
+        const typeAttr = isInput ? ' type="text"' : '';
+        return `
+          <h2 class="display">${station}</h2>
+          <p class="copy">${label}</p>
+          <${tag}${typeAttr} id="qField" placeholder="${placeholder}">${isInput ? '' : escapeHtml(state[key])}</${tag}>
+          <div class="skip-hint">Boleh dilewati kalau gak ada yang keinget</div>
+        `;
+      },
+      after(){
+        const el = $('qField');
+        if (isInput) el.value = state[key];
+        el.addEventListener('input', (e) => { state[key] = e.target.value; });
+      },
+      skippable:true
+    };
+  }
+
+  function letterStep(idx, stateKey){
+    return {
+      station: 'Stasiun Surat Gelap',
+      render(){
+        const target = getTargets(state.whoami)[idx] || '(pilih dulu siapa kamu)';
+        return `
+          <h2 class="display">Surat di Tengah Malam</h2>
+          <p class="copy">Nyalakan korek buat lihat siapa yang nunggu suratmu.</p>
+          <div class="reveal-box">
+            <div class="reveal-content">
+              <div class="to-name">Untuk: ${target}</div>
+              <textarea id="letterField" placeholder="Tulis sesuatu yang tulus buat dia...">${escapeHtml(state[stateKey])}</textarea>
+              <p style="font-size:0.78rem;color:var(--ink-dim);margin-top:8px;">Surat ini <span class="required-tag">wajib diisi</span> — supaya semua orang dijamin kebagian pesan.</p>
+            </div>
+            <div class="reveal-mask" id="revealMask"><div class="match-btn">🔥 Nyalakan korek</div></div>
+          </div>
+        `;
+      },
+      after(){
+        const mask = $('revealMask');
+        mask.addEventListener('click', () => { mask.classList.add('lit'); });
+        $('letterField').addEventListener('input', (e) => { state[stateKey] = e.target.value; });
+      },
+      validate(){
+        if (!state[stateKey] || !state[stateKey].trim()){
+          return 'Surat ini jangan kosong ya — beberapa kalimat tulus aja udah cukup.';
+        }
+        return null;
+      }
+    };
+  }
+
+  /* ===================== STEP ENGINE ===================== */
+  let stepIndex = 0;
+  const stepCard = $('stepCard');
+  const stationLabel = $('stationLabel');
+  const railFill = $('railFill');
+  const railTrain = $('railTrain');
+  const railText = $('railText');
+
+  function renderStep(){
+    const step = steps[stepIndex];
+    stationLabel.textContent = step.station;
+    stepCard.innerHTML = step.render() + navHtml(step);
+    if (step.after) step.after();
+    const nextBtn = $('navNext'), backBtn = $('navBack');
+    if (nextBtn) nextBtn.addEventListener('click', goNext);
+    if (backBtn) backBtn.addEventListener('click', goBack);
+    updateRail();
+  }
+
+  function navHtml(step){
+    if (step.noNext && step.noBack) return '';
+    let html = '<div class="nav-row">';
+    if (!step.noBack && stepIndex > 0) html += '<button class="btn ghost" id="navBack">‹ Kembali</button>';
+    if (!step.noNext) html += `<button class="btn primary" id="navNext">${step.skippable ? 'Lanjut' : 'Lanjut ›'}</button>`;
+    html += '</div>';
+    return html;
+  }
+
+  function goNext(){
+    const step = steps[stepIndex];
+    if (step.validate){
+      const err = step.validate();
+      if (err){
+        let warn = stepCard.querySelector('.status-msg');
+        if (!warn){
+          warn = document.createElement('div');
+          warn.className = 'status-msg error';
+          stepCard.appendChild(warn);
+        }
+        warn.textContent = err;
+        return;
+      }
+    }
+    if (stepIndex < steps.length - 1){
+      stepIndex++;
+      renderStep();
+    }
+  }
+  function goBack(){
+    if (stepIndex > 0){ stepIndex--; renderStep(); }
+  }
+
+  function updateRail(){
+    const total = steps.length - 1;
+    const pct = Math.round((stepIndex / total) * 100);
+    railFill.style.width = pct + '%';
+    railTrain.style.left = pct + '%';
+    railText.textContent = `Perjalanan ${stepIndex + 1} dari ${steps.length}`;
+  }
+
+  /* ===================== SUBMIT ===================== */
+  async function submitEntry(){
+    const targets = getTargets(state.whoami);
+    const payload = {
+      ts: Date.now(),
+      mood: state.mood,
+      nostalgia:{
+        funny:state.funny, touching:state.touching, repeatDay:state.repeatDay,
+        neverSaid:state.neverSaid, mvp:state.mvp, oneWord:state.oneWord
+      },
+      nominations:{
+        gokil:state.gokil, kangen:state.kangen, berkorban:state.berkorban,
+        baikHati:state.baikHati, susahDilupain:state.susahDilupain
+      },
+      letters:[
+        { to: targets[0], text: state.letter1 },
+        { to: targets[1], text: state.letter2 }
+      ],
+      freeOne: (state.freeOneTo && state.freeOneText.trim()) ? { to:state.freeOneTo, text:state.freeOneText.trim() } : null,
+      freeAll: state.freeAllText.trim() || null
+    };
+
+    const btn = $('submitBtn');
+    btn.disabled = true; btn.textContent = 'Mengirim suratmu...';
+    const key = 'submission:' + payload.ts + '-' + Math.random().toString(36).slice(2,8);
+    try{
+      const res = await window.storage.set(key, JSON.stringify(payload), true);
+      if (!res){
+        showSubmitStatus('Gagal menyimpan, koneksi mungkin lagi gangguan. Coba lagi ya.', true);
+        btn.disabled = false; btn.textContent = '📮 Kirim Suratku';
+        return;
+      }
+      stepIndex = steps.length - 1;
+      renderStep();
+    }catch(e){
+      showSubmitStatus('Gagal menyimpan, koneksi mungkin lagi gangguan. Coba lagi ya.', true);
+      btn.disabled = false; btn.textContent = '📮 Kirim Suratku';
+    }
+  }
+  function showSubmitStatus(msg, isError){
+    const el = $('submitStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'status-msg ' + (isError ? 'error' : 'ok');
+  }
+
+  /* ===================== GATE: SIAP MULAI (dodge button) ===================== */
+  const gateOverlay = $('gateOverlay'), gateArena = $('gateArena'), gateBtn = $('gateBtn'), gateTaunt = $('gateTaunt');
+  const bgMusic = $('bgMusic'), muteToggle = $('muteToggle');
+  const cornerToggleBtn = $('cornerToggle');
+  let gateAttempts = 0;
+  const DODGE_TAUNTS = [
+    'Yah, meleset!',
+    'Ayo tangkap aku kalau kamu pengen ikut rihlah kita 😏',
+    'Dikit lagi tuh...',
+    'Pelan-pelan dong, jangan grasa-grusu!'
+  ];
+
+  function moveGateButton(){
+    gateBtn.style.transform = 'none';
+    const arena = gateArena.getBoundingClientRect();
+    const btn = gateBtn.getBoundingClientRect();
+    const maxLeft = Math.max(0, arena.width - btn.width);
+    const maxTop = Math.max(0, arena.height - btn.height);
+    gateBtn.style.left = (Math.random() * maxLeft) + 'px';
+    gateBtn.style.top = (Math.random() * maxTop) + 'px';
+  }
+
+  function catchJourney(){
+    try{
+      if (bgMusic.getAttribute('src')){
+        bgMusic.play().catch(() => {});
+        muteToggle.style.display = 'inline-block';
+      }
+    }catch(e){}
+    gateOverlay.classList.add('hide');
+    setTimeout(() => { gateOverlay.style.display = 'none'; }, 380);
+    $('flowStage').style.display = 'flex';
+    $('railBox').style.display = 'block';
+    cornerToggleBtn.style.display = 'inline-block';
+    renderStep();
+  }
+
+  gateBtn.addEventListener('click', () => {
+    if (gateAttempts < DODGE_TAUNTS.length){
+      gateTaunt.textContent = DODGE_TAUNTS[gateAttempts];
+      gateAttempts++;
+      moveGateButton();
+    } else {
+      gateTaunt.textContent = 'Ketangkep! Ayo berangkat 🚂';
+      catchJourney();
+    }
+  });
+
+  muteToggle.addEventListener('click', () => {
+    bgMusic.muted = !bgMusic.muted;
+    muteToggle.textContent = bgMusic.muted ? '🔇' : '🔊';
+  });
+
+  /* ===================== MODE TOGGLE ===================== */
+  const flowStage = $('flowStage'), wallStage = $('wallStage'), railBox = $('railBox');
+  const cornerToggle = $('cornerToggle');
+  let inWallMode = false;
+
+  cornerToggle.addEventListener('click', () => {
+    inWallMode = !inWallMode;
+    if (inWallMode){
+      flowStage.style.display = 'none';
+      railBox.style.display = 'none';
+      wallStage.style.display = 'flex';
+      wallStage.style.flexDirection = 'column';
+      wallStage.style.alignItems = 'center';
+      cornerToggle.textContent = '🚂 Lanjutkan Surat';
+      handleWallEntry();
+    } else {
+      wallStage.style.display = 'none';
+      flowStage.style.display = 'flex';
+      railBox.style.display = 'block';
+      cornerToggle.textContent = '🌙 Dinding Kenangan';
+    }
+  });
+
+  /* ===================== WALL: LOCK / COUNTDOWN ===================== */
+  let countdownInterval = null;
+  function isUnlocked(){ return Date.now() >= UNLOCK_TIME; }
+  function tickCountdown(){
+    const diff = UNLOCK_TIME - Date.now();
+    if (diff <= 0){ clearInterval(countdownInterval); handleWallEntry(); return; }
+    $('cdDays').textContent = Math.floor(diff / 86400000);
+    $('cdHours').textContent = Math.floor((diff % 86400000) / 3600000);
+    $('cdMin').textContent = Math.floor((diff % 3600000) / 60000);
+    $('cdSec').textContent = Math.floor((diff % 60000) / 1000);
+  }
+  async function handleWallEntry(){
+    if (!isUnlocked()){
+      $('wallLocked').style.display = 'block';
+      $('wallContent').style.display = 'none';
+      if (!countdownInterval){ tickCountdown(); countdownInterval = setInterval(tickCountdown, 1000); }
+      return;
+    }
+    if (countdownInterval){ clearInterval(countdownInterval); countdownInterval = null; }
+    $('wallLocked').style.display = 'none';
+    $('wallContent').style.display = 'block';
+    fillSelect($('searchName'), 'Pilih nama kamu...');
+    await renderWall();
+  }
+
+  /* ===================== WALL: LOAD & RENDER ===================== */
+  let wallCache = null;
+  let pcIndex = 0, freeAllList = [];
+
+  async function loadAllSubmissions(){
+    if (wallCache) return wallCache;
+    try{
+      const listRes = await window.storage.list('submission:', true);
+      if (!listRes || !listRes.keys || !listRes.keys.length){ wallCache = []; return wallCache; }
+      const out = [];
+      for (const k of listRes.keys){
+        try{
+          const r = await window.storage.get(k, true);
+          if (r && r.value) out.push(JSON.parse(r.value));
+        }catch(e){}
+      }
+      wallCache = out;
+      return out;
+    }catch(e){ wallCache = []; return []; }
+  }
+
+  function renderNominations(subs){
+    const cats = [
+      ['gokil','Paling Gokil'], ['kangen','Paling Bikin Kangen'], ['berkorban','Paling Berkorban'],
+      ['baikHati','Paling Diem-Diem Baik Hati'], ['susahDilupain','Paling Susah Dilupain']
+    ];
+    let html = '';
+    cats.forEach(([key, label]) => {
+      const tally = {};
+      subs.forEach(s => { const n = s.nominations && s.nominations[key]; if (n) tally[n] = (tally[n]||0)+1; });
+      const entries = Object.entries(tally).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      html += `<h3 style="font-family:'Fraunces',serif;font-size:0.95rem;margin-bottom:6px;color:var(--ink);">${label}</h3>`;
+      if (!entries.length){
+        html += '<div class="empty-note">Belum ada yang milih kategori ini.</div>';
+      } else {
+        html += '<div class="lantern-row">' + entries.map(([name,count], idx) => `
+          <div class="lantern r${idx+1}"><div class="bulb"></div><div class="name">${name}</div><div class="count">${count} suara</div></div>
+        `).join('') + '</div>';
+      }
+    });
+    $('nomResults').innerHTML = html;
+  }
+
+  function showPostcard(){
+    if (!freeAllList.length){ $('postcardText').textContent = 'Belum ada pesan masuk.'; $('pcDots').textContent=''; return; }
+    $('postcardText').textContent = freeAllList[pcIndex];
+    $('pcDots').textContent = (pcIndex+1) + ' / ' + freeAllList.length;
+  }
+  let pcAutoTimer = null;
+  function restartAutoCarousel(){
+    if (pcAutoTimer) clearInterval(pcAutoTimer);
+    pcAutoTimer = setInterval(() => {
+      if (!freeAllList.length) return;
+      pcIndex = (pcIndex+1) % freeAllList.length; showPostcard();
+    }, 6000);
+  }
+  $('pcPrev').addEventListener('click', () => { if(!freeAllList.length) return; pcIndex=(pcIndex-1+freeAllList.length)%freeAllList.length; showPostcard(); restartAutoCarousel(); });
+  $('pcNext').addEventListener('click', () => { if(!freeAllList.length) return; pcIndex=(pcIndex+1)%freeAllList.length; showPostcard(); restartAutoCarousel(); });
+
+  function renderMood(subs){
+    const tally = {};
+    subs.forEach(s => { if (s.mood) tally[s.mood] = (tally[s.mood]||0)+1; });
+    const entries = Object.entries(tally).sort((a,b)=>b[1]-a[1]);
+    if (!entries.length){ $('moodStars').innerHTML = '<div class="empty-note">Belum ada mood yang tercatat.</div>'; return; }
+    const max = entries[0][1];
+    $('moodStars').innerHTML = entries.map(([mood,count]) => {
+      const size = 18 + Math.round((count/max)*26);
+      return `<div class="mood-star-item"><div class="mood-star-dot" style="width:${size}px;height:${size}px;"></div>${mood}<br>${count}</div>`;
+    }).join('');
+  }
+
+  function lettersForName(subs, name){
+    const list = [];
+    subs.forEach(s => {
+      (s.letters||[]).forEach(l => { if (l.to===name && l.text) list.push(l.text); });
+      if (s.freeOne && s.freeOne.to===name && s.freeOne.text) list.push(s.freeOne.text);
+    });
+    return list;
+  }
+  $('searchName').addEventListener('change', async function(){
+    const name = this.value;
+    const box = $('searchResults');
+    if (!name){ box.innerHTML=''; return; }
+    const subs = await loadAllSubmissions();
+    const msgs = lettersForName(subs, name);
+    if (!msgs.length){
+      box.innerHTML = `<div class="empty-note">Belum ada surat masuk buat ${name} — coba cek lagi sebentar.</div>`;
+      return;
+    }
+    box.innerHTML = msgs.map(t => `<div class="polaroid"><span class="tag">Surat anonim</span><p>${escapeHtml(t)}</p></div>`).join('');
+  });
+
+  async function renderWall(){
+    const subs = await loadAllSubmissions();
+    $('wallSummary').textContent = subs.length + ' kenangan sudah terkumpul dari teman-teman Sipaling.';
+    renderNominations(subs);
+    freeAllList = subs.map(s => s.freeAll).filter(t => t && t.length);
+    pcIndex = 0; showPostcard(); restartAutoCarousel();
+    renderMood(subs);
+  }
+
+})();
+</script>
+</body>
+</html>
